@@ -33,20 +33,27 @@ class MyVisitor(cv: ClassVisitor) : ClassVisitor(Opcodes.ASM5, cv) {
 }
 
 class MyMethodVisitor(mv: MethodVisitor) : MethodVisitor(Opcodes.ASM5, mv) {
-    val testOwner = "example/CoroutineExampleKt"
-    val testDesc = "(Lkotlin/coroutines/experimental/Continuation;)Ljava/lang/Object;"
+    private val testOwner = "example/CoroutineExampleKt"
+    private val testDesc = "(Lkotlin/coroutines/experimental/Continuation;)Ljava/lang/Object;"
+
+    private var isVisited = false
 
     override fun visitMethodInsn(opcode: Int, owner: String?, name: String?, desc: String?, itf: Boolean) {
         if (opcode == Opcodes.INVOKESTATIC && owner == testOwner && name == "test" && desc == testDesc) {
             mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
             mv.visitLdcInsn("Test detected")
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false)
+
+            isVisited = true
         }
 
         mv.visitMethodInsn(opcode, owner, name, desc, itf)
     }
 
     override fun visitMaxs(maxStack: Int, maxLocals: Int) {
-        mv.visitMaxs(maxStack + 2, maxLocals)
+        if (isVisited)
+            mv.visitMaxs(maxStack + 2, maxLocals)
+        else
+            mv.visitMaxs(maxStack, maxLocals)
     }
 }
